@@ -1,0 +1,23 @@
+[
+  {
+    "groupName": "Public Room",
+    "groupId": "lobby",
+    "members": []
+  },
+  {
+    "groupName": "gr chat",
+    "groupId": "g1776042441152",
+    "members": [
+      "user1",
+      "user2"
+    ]
+  },
+  {
+    "groupName": "hehe",
+    "groupId": "g1776042938457",
+    "members": [
+      "user1",
+      "user2"
+    ]
+  }
+]

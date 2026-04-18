@@ -29,7 +29,7 @@ public class MessageService {
      * Saves a message to the conversation file between sender and receiver.
      */
     public synchronized void saveMessage(Message msg) {
-        String filename = getConversationFilename(msg.getSender(), msg.getReceiver());
+        String filename = getStorageFilename(msg);
         List<Message> history = loadMessages(filename);
         history.add(msg);
 
@@ -56,8 +56,51 @@ public class MessageService {
         return loadMessages(filename);
     }
 
+    public List<Message> getGroupHistory(String groupId) {
+        return loadMessages(getGroupFilename(groupId));
+    }
+
     public synchronized void deleteMessage(long timestamp, String sender, String receiver) {
-        String filename = getConversationFilename(sender, receiver);
+        deleteMessage(timestamp, sender, receiver, null);
+    }
+
+    public synchronized void unsendMessage(long timestamp, String sender, String receiver, String groupId) {
+        String filename = groupId != null && !groupId.isEmpty()
+                ? getGroupFilename(groupId)
+                : getConversationFilename(sender, receiver);
+        List<Message> history = loadMessages(filename);
+        
+        boolean updated = false;
+        for (Message m : history) {
+            if (m.getTimestamp() == timestamp && m.getSender().equals(sender)) {
+                m.setUnsent(true);
+                m.setContent("Tin nhắn đã bị thu hồi"); // Localized unsend message
+                updated = true;
+                break;
+            }
+        }
+        
+        if (updated) {
+            try {
+                JSONArray arr = new JSONArray();
+                for (Message m : history) {
+                    arr.put(new org.json.JSONObject(JSONUtils.messageToJSON(m)));
+                }
+
+                try (Writer writer = new OutputStreamWriter(
+                        new FileOutputStream(filename), StandardCharsets.UTF_8)) {
+                    writer.write(arr.toString(2));
+                }
+            } catch (Exception e) {
+                System.err.println("[MessageService] Error unsending message: " + e.getMessage());
+            }
+        }
+    }
+
+    public synchronized void deleteMessage(long timestamp, String sender, String receiver, String groupId) {
+        String filename = groupId != null && !groupId.isEmpty()
+                ? getGroupFilename(groupId)
+                : getConversationFilename(sender, receiver);
         List<Message> history = loadMessages(filename);
         boolean removed = history.removeIf(m -> m.getTimestamp() == timestamp && m.getSender().equals(sender));
         
@@ -75,6 +118,13 @@ public class MessageService {
             } catch (Exception e) {
                 System.err.println("[MessageService] Error deleting message: " + e.getMessage());
             }
+        }
+    }
+
+    public synchronized void deleteGroupMessages(String groupId) {
+        File file = new File(getGroupFilename(groupId));
+        if (file.exists() && !file.delete()) {
+            System.err.println("[MessageService] Could not delete group history for " + groupId);
         }
     }
 
@@ -119,5 +169,16 @@ public class MessageService {
         String a = user1.compareTo(user2) < 0 ? user1 : user2;
         String b = user1.compareTo(user2) < 0 ? user2 : user1;
         return Constants.MESSAGES_DIR + "/" + a + "_" + b + ".json";
+    }
+
+    private String getGroupFilename(String groupId) {
+        return Constants.MESSAGES_DIR + "/group_" + groupId + ".json";
+    }
+
+    private String getStorageFilename(Message msg) {
+        if (msg.getGroupId() != null && !msg.getGroupId().isEmpty()) {
+            return getGroupFilename(msg.getGroupId());
+        }
+        return getConversationFilename(msg.getSender(), msg.getReceiver());
     }
 }

@@ -4,7 +4,7 @@ import com.chatapp.util.Constants;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -55,7 +55,9 @@ public class UDPListener implements Runnable {
     @Override
     public void run() {
         try {
-            socket = new DatagramSocket(Constants.UDP_PORT);
+            socket = new DatagramSocket(null);
+            socket.setReuseAddress(true);
+            socket.bind(new InetSocketAddress(Constants.UDP_PORT));
             socket.setBroadcast(true);
 
             // Start a cleanup thread that removes stale peers

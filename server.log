@@ -1,0 +1,8 @@
+nohup: ignoring input
+╔══════════════════════════════════╗
+║       ChatApp Server v1.0        ║
+╚══════════════════════════════════╝
+[UserService] Loaded 4 users.
+[Server] Error: Address already in use
+
+[Server] Shutting down...

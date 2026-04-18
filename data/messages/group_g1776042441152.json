@@ -1,0 +1,34 @@
+[
+  {
+    "receiver": "",
+    "sender": "user1",
+    "groupId": "g1776042441152",
+    "type": "GROUP_MESSAGE",
+    "content": "alo",
+    "timestamp": 1776042944322
+  },
+  {
+    "receiver": "",
+    "sender": "user1",
+    "groupId": "g1776042441152",
+    "type": "GROUP_MESSAGE",
+    "content": ":wow:",
+    "timestamp": 1776043742080
+  },
+  {
+    "receiver": "",
+    "sender": "user2",
+    "groupId": "g1776042441152",
+    "type": "GROUP_MESSAGE",
+    "content": ":wow::laugh:",
+    "timestamp": 1776043748235
+  },
+  {
+    "receiver": "",
+    "sender": "user2",
+    "groupId": "g1776042441152",
+    "type": "GROUP_MESSAGE",
+    "content": ":laugh:",
+    "timestamp": 1776043754507
+  }
+]

@@ -1,0 +1,23 @@
+[
+  {
+    "receiver": "user2",
+    "sender": "user1",
+    "type": "PRIVATE",
+    "content": ":wow:",
+    "timestamp": 1776042967057
+  },
+  {
+    "receiver": "user2",
+    "sender": "user1",
+    "type": "PRIVATE",
+    "content": ":sad:",
+    "timestamp": 1776043421913
+  },
+  {
+    "receiver": "user1",
+    "sender": "user2",
+    "type": "PRIVATE",
+    "content": ":smile:",
+    "timestamp": 1776043592626
+  }
+]

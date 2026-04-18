@@ -1,6 +1,7 @@
 package com.chatapp.util;
 
 import com.chatapp.model.Message;
+import com.chatapp.model.Group;
 import com.chatapp.model.User;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -19,11 +20,21 @@ public class JSONUtils {
         obj.put("receiver", msg.getReceiver());
         obj.put("content", msg.getContent());
         obj.put("timestamp", msg.getTimestamp());
+        if (msg.getGroupId() != null && !msg.getGroupId().isEmpty()) {
+            obj.put("groupId", msg.getGroupId());
+        }
         if (msg.getFileName() != null && !msg.getFileName().isEmpty()) {
             obj.put("fileName", msg.getFileName());
         }
         if (msg.getFileData() != null && !msg.getFileData().isEmpty()) {
             obj.put("fileData", msg.getFileData());
+        }
+        if (msg.isUnsent()) {
+            obj.put("isUnsent", true);
+        }
+        if (msg.getReplySnippet() != null && !msg.getReplySnippet().isEmpty()) {
+            obj.put("replySnippet", msg.getReplySnippet());
+            obj.put("replySender", msg.getReplySender());
         }
         return obj.toString();
     }
@@ -37,9 +48,41 @@ public class JSONUtils {
             obj.optString("type", Constants.TYPE_TEXT),
             obj.optLong("timestamp", System.currentTimeMillis())
         );
+        message.setGroupId(obj.optString("groupId", ""));
         message.setFileName(obj.optString("fileName", ""));
         message.setFileData(obj.optString("fileData", ""));
+        message.setUnsent(obj.optBoolean("isUnsent", false));
+        message.setReplySnippet(obj.optString("replySnippet", null));
+        message.setReplySender(obj.optString("replySender", null));
         return message;
+    }
+
+    public static String groupToJSON(Group group) {
+        JSONObject obj = new JSONObject();
+        obj.put("groupId", group.getGroupId());
+        obj.put("groupName", group.getGroupName());
+        obj.put("members", new JSONArray(group.getMembers()));
+        return obj.toString();
+    }
+
+    public static Group jsonToGroup(String json) {
+        JSONObject obj = new JSONObject(json);
+        List<String> members = new ArrayList<>();
+        JSONArray membersArr = obj.optJSONArray("members");
+        if (membersArr != null) {
+            for (int i = 0; i < membersArr.length(); i++) {
+                members.add(membersArr.optString(i));
+            }
+        }
+        return new Group(
+                obj.optString("groupId", ""),
+                obj.optString("groupName", ""),
+                members
+        );
+    }
+
+    public static JSONObject groupToJSONObject(Group group) {
+        return new JSONObject(groupToJSON(group));
     }
 
     // ───── User ↔ JSON ─────
@@ -108,5 +151,22 @@ public class JSONUtils {
             messages.add(jsonToMessage(arr.getJSONObject(i).toString()));
         }
         return messages;
+    }
+
+    public static String groupListToJSON(List<Group> groups) {
+        JSONArray arr = new JSONArray();
+        for (Group group : groups) {
+            arr.put(groupToJSONObject(group));
+        }
+        return arr.toString();
+    }
+
+    public static List<Group> jsonToGroupList(String json) {
+        List<Group> groups = new ArrayList<>();
+        JSONArray arr = new JSONArray(json);
+        for (int i = 0; i < arr.length(); i++) {
+            groups.add(jsonToGroup(arr.getJSONObject(i).toString()));
+        }
+        return groups;
     }
 }

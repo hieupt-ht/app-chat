@@ -69,8 +69,33 @@ public class AdminController {
                 obj.put("timestamp", msgInfo.optLong("timestamp"));
                 obj.put("msgSender", msgInfo.optString("sender"));
                 obj.put("msgReceiver", msgInfo.optString("receiver"));
+                obj.put("groupId", msgInfo.optString("groupId", ""));
                 chatClient.send(obj.toString());
                 JOptionPane.showMessageDialog(dashboard, "Delete command sent.");
+                requestStats();
+            }
+        });
+
+        cp.addRemoveMemberListener(e -> {
+            String groupId = cp.getSelectedGroupId();
+            String member = cp.getSelectedGroupMember();
+            if (groupId != null && member != null) {
+                JSONObject obj = new JSONObject();
+                obj.put("type", Constants.TYPE_REMOVE_GROUP_MEMBER);
+                obj.put("groupId", groupId);
+                obj.put("target", member);
+                chatClient.send(obj.toString());
+                requestStats();
+            }
+        });
+
+        cp.addDeleteGroupListener(e -> {
+            String groupId = cp.getSelectedGroupId();
+            if (groupId != null) {
+                JSONObject obj = new JSONObject();
+                obj.put("type", Constants.TYPE_DELETE_GROUP);
+                obj.put("groupId", groupId);
+                chatClient.send(obj.toString());
                 requestStats();
             }
         });
@@ -132,6 +157,11 @@ public class AdminController {
                 JSONArray msgArr = obj.optJSONArray("messages");
                 if (msgArr != null) {
                     dashboard.getChatPanel().updateMessages(msgArr);
+                }
+
+                JSONArray groupsArr = obj.optJSONArray("groups");
+                if (groupsArr != null) {
+                    dashboard.getChatPanel().updateGroups(groupsArr);
                 }
             }
         } catch (Exception e) {

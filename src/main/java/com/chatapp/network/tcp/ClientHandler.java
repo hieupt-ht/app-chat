@@ -7,7 +7,6 @@ import org.json.JSONObject;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.List;
 
 /**
  * Handles a single client connection on the server side.
@@ -63,6 +62,24 @@ public class ClientHandler implements Runnable {
                 case Constants.TYPE_FILE:
                     handlePrivateMessage(json);
                     break;
+                case Constants.TYPE_GROUP_MESSAGE:
+                    handleGroupMessage(json);
+                    break;
+                case Constants.TYPE_CREATE_GROUP:
+                    handleCreateGroup(obj);
+                    break;
+                case Constants.TYPE_JOIN_GROUP:
+                    handleJoinGroup(obj);
+                    break;
+                case Constants.TYPE_LEAVE_GROUP:
+                    handleLeaveGroup(obj);
+                    break;
+                case Constants.TYPE_REMOVE_GROUP_MEMBER:
+                    handleRemoveGroupMember(obj);
+                    break;
+                case Constants.TYPE_DELETE_GROUP:
+                    handleDeleteGroup(obj);
+                    break;
                 case Constants.TYPE_LOGOUT:
                     disconnect();
                     break;
@@ -77,6 +94,9 @@ public class ClientHandler implements Runnable {
                     break;
                 case Constants.TYPE_DELETE_MESSAGE:
                     handleDeleteMessage(obj);
+                    break;
+                case Constants.TYPE_UNSEND:
+                    handleUnsendMessage(obj, json);
                     break;
                 case Constants.TYPE_GET_STATS:
                     handleGetStats();
@@ -140,6 +160,10 @@ public class ClientHandler implements Runnable {
         if (Constants.TYPE_TEXT.equals(msg.getType())) {
             msg.setType(Constants.TYPE_PRIVATE);
         }
+        if (msg.getGroupId() != null && !msg.getGroupId().isEmpty()) {
+            handleGroupPayload(msg, json);
+            return;
+        }
         Message historyMessage = new Message(
                 msg.getSender(),
                 msg.getReceiver(),
@@ -150,6 +174,85 @@ public class ClientHandler implements Runnable {
                 msg.getTimestamp());
         historyMessage.setFileName(msg.getFileName());
         server.routeMessage(historyMessage, json);
+    }
+
+    private void handleGroupMessage(String json) {
+        Message msg = JSONUtils.jsonToMessage(json);
+        msg.setType(Constants.TYPE_GROUP_MESSAGE);
+        handleGroupPayload(msg, json);
+    }
+
+    private void handleGroupPayload(Message msg, String outboundJson) {
+        Message historyMessage = new Message(
+                msg.getSender(),
+                "",
+                Constants.TYPE_FILE.equals(msg.getType()) && msg.getFileName() != null && !msg.getFileName().isEmpty()
+                        ? msg.getFileName()
+                        : msg.getContent(),
+                msg.getType(),
+                msg.getTimestamp());
+        historyMessage.setGroupId(msg.getGroupId());
+        historyMessage.setFileName(msg.getFileName());
+        server.routeGroupMessage(historyMessage, outboundJson);
+    }
+
+    private void handleCreateGroup(JSONObject obj) {
+        String groupName = obj.optString("groupName", "").trim();
+        org.json.JSONArray memberArr = obj.optJSONArray("members");
+        java.util.List<String> members = new java.util.ArrayList<>();
+        if (memberArr != null) {
+            for (int i = 0; i < memberArr.length(); i++) {
+                String member = memberArr.optString(i, "").trim();
+                if (!member.isEmpty() && !members.contains(member) && server.getUserService().getUser(member) != null) {
+                    members.add(member);
+                }
+            }
+        }
+        if (username != null && !members.contains(username)) {
+            members.add(username);
+        }
+        server.getGroupService().createGroup(groupName, members);
+        server.broadcastGroupLists();
+    }
+
+    private void handleJoinGroup(JSONObject obj) {
+        String groupId = obj.optString("groupId", "");
+        String targetUser = obj.optString("target", username);
+        if (server.getUserService().getUser(targetUser) != null && server.getGroupService().joinGroup(groupId, targetUser)) {
+            server.broadcastGroupLists();
+        }
+    }
+
+    private void handleLeaveGroup(JSONObject obj) {
+        String groupId = obj.optString("groupId", "");
+        String targetUser = obj.optString("target", username);
+        if (server.getGroupService().leaveGroup(groupId, targetUser)) {
+            server.broadcastGroupLists();
+        }
+    }
+
+    private void handleRemoveGroupMember(JSONObject obj) {
+        String groupId = obj.optString("groupId", "");
+        String targetUser = obj.optString("target", "");
+        if (server.getGroupService().removeMember(groupId, targetUser)) {
+            server.broadcastGroupLists();
+            
+            // If it's a lobby kick, broadcast to everyone so they see the kick message
+            if (Constants.LOBBY_GROUP_ID.equals(groupId)) {
+                server.broadcastRoomEvent(targetUser, "ROOM_KICK");
+            }
+        }
+    }
+
+    private void handleDeleteGroup(JSONObject obj) {
+        String groupId = obj.optString("groupId", "");
+        if (Constants.LOBBY_GROUP_ID.equals(groupId)) {
+            return; // Prevent deleting the Lobby group
+        }
+        if (server.getGroupService().deleteGroup(groupId)) {
+            server.getMessageService().deleteGroupMessages(groupId);
+            server.broadcastGroupLists();
+        }
     }
 
     private void handleBanUser(JSONObject obj) {
@@ -176,7 +279,27 @@ public class ClientHandler implements Runnable {
         long timestamp = obj.optLong("timestamp", 0);
         String sender = obj.optString("msgSender", "");
         String receiver = obj.optString("msgReceiver", "");
-        server.getMessageService().deleteMessage(timestamp, sender, receiver);
+        String groupId = obj.optString("groupId", "");
+        server.getMessageService().deleteMessage(timestamp, sender, receiver, groupId);
+    }
+
+    private void handleUnsendMessage(JSONObject obj, String originalJson) {
+        long timestamp = obj.optLong("timestamp", 0);
+        String sender = obj.optString("msgSender", "");
+        String receiver = obj.optString("msgReceiver", "");
+        String groupId = obj.optString("groupId", "");
+        // Update database
+        server.getMessageService().unsendMessage(timestamp, sender, receiver, groupId);
+        
+        // Broadcast the update to receiver or group members for live UI update
+        Message historyMessage = new Message(sender, receiver, "Tin nhắn đã bị thu hồi", Constants.TYPE_UNSEND, timestamp);
+        historyMessage.setUnsent(true);
+        historyMessage.setGroupId(groupId);
+        if (groupId != null && !groupId.isEmpty()) {
+            server.routeGroupMessage(historyMessage, JSONUtils.messageToJSON(historyMessage));
+        } else {
+            server.routeMessage(historyMessage, JSONUtils.messageToJSON(historyMessage));
+        }
     }
 
     private void handleGetStats() {
@@ -189,13 +312,18 @@ public class ClientHandler implements Runnable {
         // Also attach the full user list and message list for the admin panels
         response.put("users", new org.json.JSONArray(JSONUtils.userListToJSON(server.getUserService().getAllUsers())));
         response.put("messages", new org.json.JSONArray(JSONUtils.messageListToJSON(server.getMessageService().getAllMessages())));
+        response.put("groups", new org.json.JSONArray(JSONUtils.groupListToJSON(server.getGroupService().getAllGroups())));
         
         sendMessage(response.toString());
     }
 
     private void sendMessageHistory(String user) {
-        // We don't know who the user will chat with yet,
-        // so history is loaded on demand when a conversation is selected.
+        // Send lobby (public room) chat history
+        java.util.List<com.chatapp.model.Message> lobbyHistory =
+                server.getMessageService().getGroupHistory(Constants.LOBBY_GROUP_ID);
+        for (com.chatapp.model.Message msg : lobbyHistory) {
+            sendMessage(JSONUtils.messageToJSON(msg));
+        }
     }
 
     /**

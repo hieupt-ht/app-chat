@@ -14,6 +14,7 @@ public class Constants {
     public static final String DATA_DIR = "data";
     public static final String USERS_FILE = DATA_DIR + "/users.json";
     public static final String MESSAGES_DIR = DATA_DIR + "/messages";
+    public static final String GROUPS_FILE = DATA_DIR + "/groups.json";
     public static final String DOWNLOADS_DIR = DATA_DIR + "/downloads";
 
     // ───── UI Colors (Light theme) ─────
@@ -64,12 +65,26 @@ public class Constants {
     public static final String TYPE_USER_LIST = "USER_LIST";
     public static final String TYPE_AUTH_RESULT = "AUTH_RESULT";
     public static final String TYPE_PRIVATE  = "PRIVATE";
+    public static final String TYPE_GROUP_MESSAGE = "GROUP_MESSAGE";
     public static final String TYPE_BAN_USER = "BAN_USER";
     public static final String TYPE_DELETE_USER = "DELETE_USER";
     public static final String TYPE_FORCE_LOGOUT = "FORCE_LOGOUT";
     public static final String TYPE_DELETE_MESSAGE = "DELETE_MESSAGE";
     public static final String TYPE_GET_STATS = "GET_STATS";
     public static final String TYPE_STATS_RESULT = "STATS_RESULT";
+    public static final String TYPE_CREATE_GROUP = "CREATE_GROUP";
+    public static final String TYPE_JOIN_GROUP = "JOIN_GROUP";
+    public static final String TYPE_LEAVE_GROUP = "LEAVE_GROUP";
+    public static final String TYPE_GROUP_LIST = "GROUP_LIST";
+    public static final String TYPE_REMOVE_GROUP_MEMBER = "REMOVE_GROUP_MEMBER";
+    public static final String TYPE_DELETE_GROUP = "DELETE_GROUP";
+    public static final String TYPE_ROOM_JOIN = "ROOM_JOIN";
+    public static final String TYPE_ROOM_LEAVE = "ROOM_LEAVE";
+    public static final String TYPE_UNSEND = "UNSEND_MESSAGE";
+
+    // ───── Lobby (Public Room) ─────
+    public static final String LOBBY_GROUP_ID = "lobby";
+    public static final String LOBBY_GROUP_NAME = "Public Room";
 
     // ───── Roles ─────
     public static final String ROLE_USER = "USER";

@@ -1,0 +1,18 @@
+[
+  {
+    "receiver": "",
+    "sender": "user2",
+    "groupId": "g1776042938457",
+    "type": "GROUP_MESSAGE",
+    "content": ":laugh:",
+    "timestamp": 1776042948859
+  },
+  {
+    "receiver": "",
+    "sender": "user2",
+    "groupId": "g1776042938457",
+    "type": "GROUP_MESSAGE",
+    "content": ":smile::laugh:",
+    "timestamp": 1776043613675
+  }
+]

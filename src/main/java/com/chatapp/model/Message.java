@@ -10,8 +10,14 @@ public class Message implements Serializable {
     private String content;
     private String type; // TEXT, FILE, EMOJI, SYSTEM, LOGIN, REGISTER, etc.
     private long timestamp;
+    private String groupId;
     private String fileName;
     private String fileData;
+    
+    // New fields for Reply and Unsend features
+    private boolean isUnsent;
+    private String replySnippet;
+    private String replySender;
 
     public Message(String sender, String receiver, String content, String type) {
         this.sender = sender;
@@ -87,8 +93,40 @@ public class Message implements Serializable {
         this.fileData = fileData;
     }
 
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
+
+    public boolean isUnsent() {
+        return isUnsent;
+    }
+
+    public void setUnsent(boolean unsent) {
+        isUnsent = unsent;
+    }
+
+    public String getReplySnippet() {
+        return replySnippet;
+    }
+
+    public void setReplySnippet(String replySnippet) {
+        this.replySnippet = replySnippet;
+    }
+
+    public String getReplySender() {
+        return replySender;
+    }
+
+    public void setReplySender(String replySender) {
+        this.replySender = replySender;
+    }
+
     @Override
     public String toString() {
-        return "[" + type + "] " + sender + " → " + receiver + ": " + content;
+        return "[" + type + "] " + sender + " → " + (groupId != null && !groupId.isEmpty() ? groupId : receiver) + ": " + content;
     }
 }
